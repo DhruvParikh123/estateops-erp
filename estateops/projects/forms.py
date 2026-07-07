@@ -7,13 +7,12 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = [
-            "name", "code", "client_name", "location_type", 
+            "name", "code", "location_type", 
             "address", "city", "state", "pincode", "status"
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Project Name"}),
             "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "Project Code (e.g. AMD-01)"}),
-            "client_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Client Name (Optional)"}),
             "location_type": forms.TextInput(attrs={"class": "form-control", "placeholder": "Location Type (e.g. Ahmedabad)"}),
             "address": forms.Textarea(attrs={"class": "form-control", "rows": 2, "placeholder": "Site Address"}),
             "city": forms.TextInput(attrs={"class": "form-control", "placeholder": "City"}),

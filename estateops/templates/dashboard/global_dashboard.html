@@ -86,10 +86,6 @@
         <!-- Client & Location Info -->
         <div class="text-secondary small mb-4">
           <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="material-symbols-outlined" style="font-size: 16px;">handshake</span>
-            <span>Client: {{ project.client_name|default:"Not Specified" }}</span>
-          </div>
-          <div class="d-flex align-items-center gap-2 mb-1">
             <span class="material-symbols-outlined" style="font-size: 16px;">location_on</span>
             <span>{{ project.city|default:"No City" }}, {{ project.state|default:"No State" }} ({{ project.location_type|default:"Ahmedabad" }})</span>
           </div>
@@ -154,10 +150,6 @@
               <div class="col-md-6">
                 <label class="form-label fw-bold">Project Code</label>
                 <input type="text" name="code" class="form-control" value="{{ project.code }}" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Client Name</label>
-                <input type="text" name="client_name" class="form-control" value="{{ project.client_name|default:'' }}">
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-bold">Location Type</label>
@@ -231,10 +223,6 @@
               <label class="form-label fw-bold">Project Code</label>
               <input type="text" name="code" class="form-control"
                 placeholder="e.g. AMD-01 (Leave blank to auto-generate)">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Client Name</label>
-              <input type="text" name="client_name" class="form-control" placeholder="Client Name (Optional)">
             </div>
             <div class="col-md-6">
               <label class="form-label fw-bold">Location Type</label>

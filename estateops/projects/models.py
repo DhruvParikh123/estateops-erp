@@ -15,7 +15,6 @@ class Project(models.Model):
 
     name = models.CharField(max_length=150)
     code = models.CharField(max_length=50, unique=True, null=True, blank=True)
-    client_name = models.CharField(max_length=150, blank=True, null=True)
     location_type = models.CharField(max_length=100, default="Ahmedabad", blank=True, null=True)
     # Keeping old location field for compatibility
     location = models.CharField(max_length=150, blank=True)
