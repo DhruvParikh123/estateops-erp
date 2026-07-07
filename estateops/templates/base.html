@@ -1,0 +1,209 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}EstateOps{% endblock %}</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo-container">
+          <span class="material-symbols-outlined">real_estate_agent</span>
+        </div>
+        <div class="brand-details">
+          <div class="brand-title">EstateOps</div>
+          <div class="brand-sub">ERP &middot; CRM</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        {% if project %}
+          <!-- Project Workspace Sidebar -->
+          {% if user.is_super_admin %}
+            <a href="{% url 'dashboard:home' %}" class="text-warning">
+              <span class="material-symbols-outlined icon text-warning">swap_horiz</span> Switch Project
+            </a>
+            <hr style="border-color: rgba(255,255,255,0.15); margin: 8px 16px;">
+          {% endif %}
+
+          <a href="{% url 'projects:dashboard' project.id %}" class="{% if request.resolver_match.view_name == 'projects:dashboard' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">dashboard</span> Dashboard
+          </a>
+
+          <a href="{% url 'leads:list' project.id %}" class="{% if request.resolver_match.app_name == 'leads' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">group</span> Leads &amp; Follow-ups
+          </a>
+
+          <a href="{% url 'stock:list' project.id %}" class="{% if request.resolver_match.app_name == 'stock' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">inventory_2</span> Godown &amp; Stock
+          </a>
+
+          {% if user.role == 'SUPER_ADMIN' or user.role == 'PROJECT_ADMIN' or user.role == 'EMPLOYEE' %}
+            <a href="{% url 'projects:flat_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:flat_list' or request.resolver_match.view_name == 'projects:flat_edit' %}active{% endif %}">
+              <span class="material-symbols-outlined icon">apartment</span> Flats
+            </a>
+          {% endif %}
+          
+          {% if user.role == 'SUPER_ADMIN' or user.role == 'PROJECT_ADMIN' or user.role == 'HR' %}
+            <a href="{% url 'projects:employee_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:employee_list' %}active{% endif %}">
+              <span class="material-symbols-outlined icon">badge</span> Employees
+            </a>
+          {% endif %}
+
+          <a href="{% url 'projects:attendance_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:attendance_list' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">how_to_reg</span> Attendance
+          </a>
+          
+          <a href="{% url 'projects:visitor_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:visitor_list' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">assignment_ind</span> Visitors
+          </a>
+
+          {% if user.role == 'SUPER_ADMIN' or user.role == 'PROJECT_ADMIN' or user.role == 'HR' %}
+            <a href="{% url 'projects:asset_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:asset_list' %}active{% endif %}">
+              <span class="material-symbols-outlined icon">construction</span> Assets
+            </a>
+          {% endif %}
+
+          <a href="{% url 'projects:leave_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:leave_list' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">date_range</span> Leaves
+          </a>
+
+          {% if user.role == 'SUPER_ADMIN' or user.role == 'PROJECT_ADMIN' or user.role == 'HR' %}
+            <a href="{% url 'projects:reports' project.id %}" class="{% if request.resolver_match.view_name == 'projects:reports' %}active{% endif %}">
+              <span class="material-symbols-outlined icon">assessment</span> Reports
+            </a>
+          {% endif %}
+
+          {% if user.role == 'SUPER_ADMIN' or user.role == 'PROJECT_ADMIN' %}
+            <a href="{% url 'projects:user_list' project.id %}" class="{% if request.resolver_match.view_name == 'projects:user_list' %}active{% endif %}">
+              <span class="material-symbols-outlined icon">manage_accounts</span> Users
+            </a>
+          {% endif %}
+
+        {% else %}
+          <!-- Global Portal Sidebar -->
+          <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.view_name == 'dashboard:home' %}active{% endif %}">
+            <span class="material-symbols-outlined icon">dashboard</span> Global Portal
+          </a>
+        {% endif %}
+      </nav>
+      <div class="sidebar-footer">
+        {% if user.is_authenticated %}
+          <div class="user-profile-summary">
+            <div class="user-avatar">
+              {{ user.username|slice:":1"|upper }}
+            </div>
+            <div class="user-info">
+              <div class="user-email" title="{{ user.email|default:user.username }}">{{ user.email|default:user.username }}</div>
+              <div class="user-role">Role: {{ user.role }}</div>
+            </div>
+          </div>
+          <form action="{% url 'accounts:logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-signout">
+              <span class="material-symbols-outlined" style="font-size: 16px;">logout</span> Sign out
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <div class="topbar">
+        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+        <div class="page-date">
+          <span class="material-symbols-outlined" style="font-size: 18px; color: var(--slate-400);">calendar_today</span>
+          {% now "D, M d, Y" %}
+        </div>
+      </div>
+
+      <div class="page-body">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      {% if messages %}
+        {% for message in messages %}
+          Swal.fire({
+            icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% else %}success{% endif %}",
+            title: "{% if message.tags == 'error' %}Error!{% elif message.tags == 'warning' %}Warning!{% elif message.tags == 'info' %}Info{% else %}Success!{% endif %}",
+            text: "{{ message|escapejs }}",
+            confirmButtonColor: "#0f172a", // Navy primary theme color
+            customClass: {
+              popup: 'rounded-4 shadow'
+            }
+          });
+        {% endfor %}
+      {% endif %}
+    });
+
+    function confirmDeleteLink(event, message) {
+      event.preventDefault();
+      const targetUrl = event.currentTarget.href;
+      Swal.fire({
+        title: 'Are you sure?',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444', // Danger color
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          popup: 'rounded-4 shadow'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = targetUrl;
+        }
+      });
+      return false;
+    }
+
+    function confirmDeleteForm(event, message) {
+      event.preventDefault();
+      const form = event.currentTarget.closest('form');
+      Swal.fire({
+        title: 'Are you sure?',
+        text: message,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444', // Danger color
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        customClass: {
+          popup: 'rounded-4 shadow'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+      return false;
+    }
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

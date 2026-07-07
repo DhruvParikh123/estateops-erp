@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Daily Attendance &middot; {{ project.name }} &middot; EstateOps{% endblock %}
+{% block page_title %}Daily Attendance Tracker{% endblock %}
+
+{% block content %}
+<p class="page-lede mb-4">Record and monitor employee presence at the construction site for today ({{ today|date:"l, M d, Y" }}).</p>
+
+{% if request.user.role == 'EMPLOYEE' %}
+<!-- Read-Only View for Employees: Only show historical logs in full width -->
+<div class="row g-4">
+  <div class="col-lg-12">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary">calendar_month</span>
+        Historical Records Log
+      </h6>
+      
+      {% if history %}
+        <div style="max-height: 600px; overflow-y: auto;">
+          <div class="d-flex flex-column gap-2">
+            {% for record in history %}
+              <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                <div>
+                  <span class="fw-bold text-dark" style="font-size: 0.95rem;">{{ record.employee.name }}</span>
+                  <div class="text-muted small" style="font-size: 0.8rem;">{{ record.date|date:"l, M d, Y" }}</div>
+                </div>
+                <div>
+                  {% if record.status == 'PRESENT' %}
+                    <span class="badge bg-success text-white rounded-pill px-3 py-1 font-monospace" style="font-size: 0.72rem;">PRESENT</span>
+                  {% elif record.status == 'LATE' %}
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-1 font-monospace" style="font-size: 0.72rem;">LATE</span>
+                  {% elif record.status == 'LEAVE' %}
+                    <span class="badge bg-secondary text-white rounded-pill px-3 py-1 font-monospace" style="font-size: 0.72rem;">LEAVE</span>
+                  {% else %}
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-1 font-monospace" style="font-size: 0.72rem;">ABSENT</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-row py-5">
+          <span class="material-symbols-outlined mb-2" style="font-size: 36px;">history</span>
+          <p class="mb-0">No attendance history logged yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- Split view for Admins, HR, and Security -->
+<div class="row g-4">
+  <!-- Log Daily Attendance Panel -->
+  <div class="col-lg-7">
+    <div class="card-estate">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary">edit_calendar</span>
+        Log Attendance ({{ today|date:"M d, Y" }})
+      </h6>
+      
+      {% if employees_data %}
+        <form method="post" action="{% url 'projects:attendance_log' project.id %}">
+          {% csrf_token %}
+          <div class="table-estate-wrapper mb-4">
+            <table class="table-estate">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Designation</th>
+                  <th class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in employees_data %}
+                  <tr>
+                    <td>
+                      <div class="fw-bold text-dark">{{ item.employee.name }}</div>
+                      <div class="font-monospace small text-muted">{{ item.employee.employee_id }}</div>
+                    </td>
+                    <td>{{ item.employee.designation }}</td>
+                    <td>
+                      <div class="d-flex justify-content-center gap-2">
+                        <!-- Present -->
+                        <input type="radio" class="btn-check" name="status_{{ item.employee.id }}" id="status_pres_{{ item.employee.id }}" value="PRESENT" 
+                          {% if item.status == 'PRESENT' %}checked{% endif %}>
+                        <label class="btn btn-outline-success btn-sm px-2 py-1" style="font-size: 0.72rem; min-width: 60px;" for="status_pres_{{ item.employee.id }}">Present</label>
+
+                        <!-- Late -->
+                        <input type="radio" class="btn-check" name="status_{{ item.employee.id }}" id="status_late_{{ item.employee.id }}" value="LATE"
+                          {% if item.status == 'LATE' %}checked{% endif %}>
+                        <label class="btn btn-outline-warning btn-sm px-2 py-1" style="font-size: 0.72rem; min-width: 60px;" for="status_late_{{ item.employee.id }}">Late</label>
+
+                        <!-- Absent -->
+                        <input type="radio" class="btn-check" name="status_{{ item.employee.id }}" id="status_abs_{{ item.employee.id }}" value="ABSENT"
+                          {% if item.status == 'ABSENT' %}checked{% endif %}>
+                        <label class="btn btn-outline-danger btn-sm px-2 py-1" style="font-size: 0.72rem; min-width: 60px;" for="status_abs_{{ item.employee.id }}">Absent</label>
+
+                        <!-- Leave -->
+                        <input type="radio" class="btn-check" name="status_{{ item.employee.id }}" id="status_leave_{{ item.employee.id }}" value="LEAVE"
+                          {% if item.status == 'LEAVE' %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary btn-sm px-2 py-1" style="font-size: 0.72rem; min-width: 60px;" for="status_leave_{{ item.employee.id }}">Leave</label>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <button type="submit" class="btn btn-estate w-100 justify-content-center">
+            <span class="material-symbols-outlined">save</span> Save Daily Attendance Log
+          </button>
+        </form>
+      {% else %}
+        <div class="empty-row py-4">No active employees registered to mark attendance.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Attendance History Panel -->
+  <div class="col-lg-5">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary">calendar_month</span>
+        Historical Records Log
+      </h6>
+      
+      {% if history %}
+        <div style="max-height: 500px; overflow-y: auto;">
+          <div class="d-flex flex-column gap-2">
+            {% for record in history %}
+              <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                <div>
+                  <span class="fw-bold text-dark small" style="font-size: 0.88rem;">{{ record.employee.name }}</span>
+                  <div class="text-muted small" style="font-size: 0.75rem;">{{ record.date|date:"l, M d, Y" }}</div>
+                </div>
+                <div>
+                  {% if record.status == 'PRESENT' %}
+                    <span class="badge bg-success text-white rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">PRESENT</span>
+                  {% elif record.status == 'LATE' %}
+                    <span class="badge bg-warning text-dark rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">LATE</span>
+                  {% elif record.status == 'LEAVE' %}
+                    <span class="badge bg-secondary text-white rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">LEAVE</span>
+                  {% else %}
+                    <span class="badge bg-danger text-white rounded-pill px-2 py-1 font-monospace" style="font-size: 0.65rem;">ABSENT</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-row py-5">
+          <span class="material-symbols-outlined mb-2" style="font-size: 36px;">history</span>
+          <p class="mb-0">No attendance history logged yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

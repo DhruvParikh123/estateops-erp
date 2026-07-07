@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Visitor Log &middot; {{ project.name }} &middot; EstateOps{% endblock %}
+{% block page_title %}Visitor Access Log{% endblock %}
+
+{% block content %}
+{% if request.user.role == 'EMPLOYEE' %}
+<!-- Read-Only Visitor View for Employees -->
+<div class="mb-4">
+  <p class="page-lede mb-0">Record of current visitors and entry history on this construction project site.</p>
+</div>
+
+<div class="row g-4">
+  <!-- Active Visitors Panel -->
+  <div class="col-lg-8">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-success">directions_run</span>
+        Currently On-Site
+      </h6>
+
+      <div class="table-estate-wrapper">
+        <table class="table-estate">
+          <thead>
+            <tr>
+              <th>Visitor Name</th>
+              <th>Mobile</th>
+              <th>Contact Person</th>
+              <th>Purpose</th>
+              <th>Entry Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for vis in visitors %}
+            {% if not vis.exit_time %}
+            <tr>
+              <td class="fw-bold text-dark">{{ vis.name }}</td>
+              <td>{{ vis.mobile }}</td>
+              <td>{{ vis.contact_person }}</td>
+              <td>{{ vis.purpose }}</td>
+              <td>{{ vis.entry_time|date:"M d, H:i" }}</td>
+            </tr>
+            {% endif %}
+            {% empty %}
+            <tr>
+              <td colspan="5" class="empty-row py-4">No active visitors currently on-site.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Log Summary -->
+  <div class="col-lg-4">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-secondary">history</span>
+        Recent Visitor History
+      </h6>
+
+      <div style="max-height: 400px; overflow-y: auto;">
+        <div class="d-flex flex-column gap-2">
+          {% for vis in visitors %}
+          {% if vis.exit_time %}
+          <div class="p-2 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold text-dark small">{{ vis.name }}</span>
+              <span class="badge bg-light text-secondary rounded px-2 py-1 fs-9">Checked Out</span>
+            </div>
+            <div class="text-secondary small" style="font-size: 0.8rem;">Met: {{ vis.contact_person }} &middot; {{
+              vis.purpose }}</div>
+            <div class="text-muted small" style="font-size: 0.72rem; margin-top: 2px;">
+              In: {{ vis.entry_time|date:"M d, H:i" }} &middot; Out: {{ vis.exit_time|date:"M d, H:i" }}
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- Manage View for Admin, HR, and Security -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <p class="page-lede mb-0">Record and track all visitors checking in and out of the project site.</p>
+  <button class="btn btn-estate" data-bs-toggle="modal" data-bs-target="#createVisitorModal">
+    <span class="material-symbols-outlined">person_add</span> Log Visitor check-in
+  </button>
+</div>
+
+<div class="row g-4">
+  <!-- Active Visitors Panel -->
+  <div class="col-lg-8">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-success">directions_run</span>
+        Currently On-Site
+      </h6>
+
+      <div class="table-estate-wrapper">
+        <table class="table-estate">
+          <thead>
+            <tr>
+              <th>Visitor Name</th>
+              <th>Mobile</th>
+              <th>Contact Person</th>
+              <th>Purpose</th>
+              <th>Entry Time</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for vis in visitors %}
+            {% if not vis.exit_time %}
+            <tr>
+              <td class="fw-bold text-dark">{{ vis.name }}</td>
+              <td>{{ vis.mobile }}</td>
+              <td>{{ vis.contact_person }}</td>
+              <td>{{ vis.purpose }}</td>
+              <td>{{ vis.entry_time|date:"M d, H:i" }}</td>
+              <td class="text-end">
+                <a href="{% url 'projects:visitor_checkout' project.id vis.id %}"
+                  class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 justify-content-center">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">logout</span> Check-out
+                </a>
+              </td>
+            </tr>
+            {% endif %}
+            {% empty %}
+            <tr>
+              <td colspan="6" class="empty-row py-4">No active visitors currently on-site.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historical Log Summary -->
+  <div class="col-lg-4">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-secondary">history</span>
+        Recent Visitor History
+      </h6>
+
+      <div style="max-height: 400px; overflow-y: auto;">
+        <div class="d-flex flex-column gap-2">
+          {% for vis in visitors %}
+          {% if vis.exit_time %}
+          <div class="p-2 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold text-dark small">{{ vis.name }}</span>
+              <span class="badge bg-light text-secondary rounded px-2 py-1 fs-9">Checked Out</span>
+            </div>
+            <div class="text-secondary small" style="font-size: 0.8rem;">Met: {{ vis.contact_person }} &middot; {{
+              vis.purpose }}</div>
+            <div class="text-muted small" style="font-size: 0.72rem; margin-top: 2px;">
+              In: {{ vis.entry_time|date:"M d, H:i" }} &middot; Out: {{ vis.exit_time|date:"M d, H:i" }}
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Visitor Modal -->
+<div class="modal fade" id="createVisitorModal" data-bs-backdrop="static" tabindex="-1"
+  aria-labelledby="createVisitorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{% url 'projects:visitor_create' project.id %}">
+        {% csrf_token %}
+        <div class="modal-header text-white">
+          <h5 class="modal-title fw-bold" id="createVisitorModalLabel">Visitor Check-in</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Visitor Name</label>
+            {{ form.name }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Mobile Number</label>
+            {{ form.mobile }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Contact Person (Whom to Meet)</label>
+            {{ form.contact_person }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Purpose of Visit</label>
+            {{ form.purpose }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-estate" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-estate">Log Check-in</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

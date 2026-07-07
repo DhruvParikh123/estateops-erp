@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Leave Management &middot; {{ project.name }} &middot; EstateOps{% endblock %}
+{% block page_title %}Leave Management Workspace{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <p class="page-lede mb-0">Monitor employee leave requests and process approvals for the project site.</p>
+  <button class="btn btn-estate" data-bs-toggle="modal" data-bs-target="#applyLeaveModal">
+    <span class="material-symbols-outlined">date_range</span> Apply for Leave
+  </button>
+</div>
+
+<!-- Leaves Table Card -->
+<div class="card-estate">
+  {% if leaves %}
+  <div class="table-estate-wrapper">
+    <table class="table-estate">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Duration</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leave in leaves %}
+        <tr>
+          <td>
+            <div class="fw-bold text-dark">{{ leave.employee.name }}</div>
+            <div class="small text-muted font-monospace">{{ leave.employee.employee_id }}</div>
+          </td>
+          <td>
+            <div class="fw-semibold">{{ leave.start_date|date:"M d, Y" }} &ndash; {{ leave.end_date|date:"M d, Y" }}
+            </div>
+            <div class="small text-muted">Applied: {{ leave.created_at|date:"M d, Y" }}</div>
+          </td>
+          <td><small class="text-secondary">{{ leave.reason }}</small></td>
+          <td>
+            {% if leave.status == 'PENDING' %}
+            <span class="badge bg-opacity-10 bg-warning text-warning px-2 py-1 fs-8 fw-semibold">Pending Review</span>
+            {% elif leave.status == 'APPROVED' %}
+            <span class="badge bg-opacity-10 bg-success text-success px-2 py-1 fs-8 fw-semibold">Approved</span>
+            {% else %}
+            <span class="badge bg-opacity-10 bg-danger text-danger px-2 py-1 fs-8 fw-semibold">Rejected</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if leave.status == 'PENDING' and can_approve %}
+            <div class="d-inline-flex gap-2">
+              <a href="{% url 'projects:leave_action' project.id leave.id 'approve' %}"
+                class="btn btn-success btn-sm d-flex align-items-center gap-1">
+                <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Approve
+              </a>
+              <a href="{% url 'projects:leave_action' project.id leave.id 'reject' %}"
+                class="btn btn-danger btn-sm d-flex align-items-center gap-1">
+                <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Reject
+              </a>
+            </div>
+            {% else %}
+            <span class="text-muted small">&mdash;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-row py-5 d-flex flex-column align-items-center justify-content-center">
+    <span class="material-symbols-outlined mb-2" style="font-size: 48px; color: var(--slate-300);">calendar_month</span>
+    <h5 class="fw-bold">No leave requests logged</h5>
+    <p class="text-secondary small">Apply for leave or review pending logs for employee absences.</p>
+    <button class="btn btn-estate mt-3" data-bs-toggle="modal" data-bs-target="#applyLeaveModal">
+      Apply for Leave
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Apply Leave Modal -->
+<div class="modal fade" id="applyLeaveModal" data-bs-backdrop="static" tabindex="-1"
+  aria-labelledby="applyLeaveModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{% url 'projects:leave_apply' project.id %}">
+        {% csrf_token %}
+        <div class="modal-header text-white">
+          <h5 class="modal-title fw-bold" id="applyLeaveModalLabel">Apply for Leave</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Select Employee</label>
+            {{ form.employee }}
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Start Date</label>
+              {{ form.start_date }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">End Date</label>
+              {{ form.end_date }}
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Reason for Leave</label>
+            {{ form.reason }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-estate" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-estate">Submit Application</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

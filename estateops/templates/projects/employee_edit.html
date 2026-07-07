@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Edit Employee details &middot; {{ project.name }} &middot; EstateOps{% endblock %}
+{% block page_title %}Edit Employee details{% endblock %}
+
+{% block content %}
+<div class="card-estate p-4 max-width-md mx-auto" style="max-width: 800px;">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Full Name</label>
+        {{ form.name }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Email Address</label>
+        {{ form.email }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Mobile Number</label>
+        {{ form.mobile }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Aadhaar Card Number</label>
+        {{ form.aadhaar }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Department</label>
+        {{ form.department }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Designation</label>
+        {{ form.designation }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Joining Date</label>
+        {{ form.joining_date }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Photo Upload</label>
+        {{ form.photo }}
+        {% if employee.photo %}
+          <div class="mt-2">
+            <img src="{{ employee.photo.url }}" class="img-thumbnail" style="max-height: 80px;" alt="Current photo">
+          </div>
+        {% endif %}
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-bold">Permanent Address</label>
+        {{ form.address }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Status</label>
+        {{ form.status }}
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a href="{% url 'projects:employee_list' project.id %}" class="btn btn-outline-estate">Cancel</a>
+      <button type="submit" class="btn btn-estate">Save Changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

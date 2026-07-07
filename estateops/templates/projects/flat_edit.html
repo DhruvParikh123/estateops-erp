@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Edit Flat details &middot; {{ project.name }} &middot; EstateOps{% endblock %}
+{% block page_title %}Edit Flat details{% endblock %}
+
+{% block content %}
+<div class="card-estate p-4 max-width-md mx-auto" style="max-width: 600px;">
+  <form method="post" id="editFlatForm">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Wing / Ring / Block</label>
+        {{ form.wing }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Floor Level</label>
+        {{ form.floor }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Flat Number</label>
+        {{ form.flat_number }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold">Type / Config</label>
+        {{ form.flat_type }}
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-bold">Status</label>
+        {{ form.status }}
+      </div>
+      
+      <!-- Conditional Booking Info -->
+      <div class="col-12 booking-field-group" style="display: none;">
+        <div class="p-3 bg-light rounded border border-warning-subtle">
+          <h6 class="fw-bold text-dark mb-3">Booking / Sale Information</h6>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Resident/Client Name</label>
+            {{ form.client_name }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Mobile Number</label>
+            {{ form.client_phone }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Family Members</label>
+            {{ form.family_members }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Booking Date</label>
+            {{ form.booking_date }}
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-bold">Price (INR)</label>
+            {{ form.price }}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a href="{% url 'projects:flat_list' project.id %}" class="btn btn-outline-estate">Cancel</a>
+      <button type="submit" class="btn btn-estate">Save Changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function toggleBookingFields(selectEl) {
+    const form = selectEl.closest('form');
+    const group = form.querySelector('.booking-field-group');
+    if (selectEl.value === 'BOOKED' || selectEl.value === 'SOLD') {
+      group.style.display = 'block';
+    } else {
+      group.style.display = 'none';
+      // Clear inputs if hidden
+      form.querySelector('input[name="client_name"]').value = '';
+      form.querySelector('input[name="client_phone"]').value = '';
+      form.querySelector('textarea[name="family_members"]').value = '';
+      form.querySelector('input[name="booking_date"]').value = '';
+      form.querySelector('input[name="price"]').value = '';
+    }
+  }
+  
+  // Initialize on page load for the edit form select box
+  document.addEventListener("DOMContentLoaded", function() {
+    const select = document.querySelector('#editFlatForm select[name="status"]');
+    if (select) {
+      toggleBookingFields(select);
+      // If it is already booked/sold, make sure to keep values intact (the clear inputs in toggleBookingFields is only when user changes selectEl.value manually, so we temporarily override to prevent wiping on initial load)
+      if (select.value === 'BOOKED' || select.value === 'SOLD') {
+        const group = document.querySelector('.booking-field-group');
+        group.style.display = 'block';
+      }
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &middot; EstateOps{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stat Cards Row -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card leads-card">
+      <div>
+        <div class="stat-label">Total Leads</div>
+        <div class="stat-value">{{ total_leads }}</div>
+      </div>
+      <div class="stat-icon">
+        <span class="material-symbols-outlined">group</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card interested-card">
+      <div>
+        <div class="stat-label">Interested</div>
+        <div class="stat-value">{{ interested }}</div>
+      </div>
+      <div class="stat-icon">
+        <span class="material-symbols-outlined">trending_up</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card lost-card">
+      <div>
+        <div class="stat-label">Lost</div>
+        <div class="stat-value">{{ lost }}</div>
+      </div>
+      <div class="stat-icon">
+        <span class="material-symbols-outlined">trending_down</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card projects-card">
+      <div>
+        <div class="stat-label">Active Projects</div>
+        <div class="stat-value">{{ active_projects }}</div>
+      </div>
+      <div class="stat-icon">
+        <span class="material-symbols-outlined">construction</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-estate">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined" style="color: var(--accent);">pie_chart</span>
+        Leads breakdown
+      </h6>
+      <div style="position: relative; height: 240px;">
+        <canvas id="leadsChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-estate">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined" style="color: var(--accent);">bar_chart</span>
+        Stock levels
+      </h6>
+      <div style="position: relative; height: 240px;">
+        {% if stock_items %}
+          <canvas id="stockChart"></canvas>
+        {% else %}
+          <div class="empty-row d-flex flex-column align-items-center justify-content-center h-100">
+            <span class="material-symbols-outlined mb-2" style="font-size: 36px; color: var(--slate-300);">inventory_2</span>
+            No stock data yet.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Progress List Card -->
+<div class="card-estate">
+  <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+    <span class="material-symbols-outlined" style="color: var(--accent);">analytics</span>
+    Project progress
+  </h6>
+  {% if projects %}
+    {% for project in projects %}
+      <div class="project-progress-item mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold text-dark" style="font-size: 0.95rem;">{{ project.name }}</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge-stage">{{ project.current_stage }}</span>
+            <span class="fw-bold text-primary" style="font-size: 0.9rem;">{{ project.progress }}%</span>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: {{ project.progress }}%;"></div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-row d-flex flex-column align-items-center justify-content-center">
+      <span class="material-symbols-outlined mb-2" style="font-size: 36px; color: var(--slate-300);">construction</span>
+      No projects yet.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Typography styling configuration
+  const chartFont = {
+    family: "'Outfit', 'Inter', sans-serif",
+    size: 12,
+    weight: '600'
+  };
+
+  // Leads chart
+  const leadsCtx = document.getElementById('leadsChart');
+  new Chart(leadsCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Interested', 'Active', 'Lost'],
+      datasets: [{
+        data: [{{ interested }}, {{ active_leads }}, {{ lost }}],
+        backgroundColor: ['#10b981', '#6366f1', '#f43f5e'],
+        borderWidth: 4,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      cutout: '75%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: chartFont,
+            usePointStyle: true,
+            padding: 20,
+            color: '#475569'
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { family: "'Outfit', sans-serif", size: 13, weight: '700' },
+          bodyFont: { family: "'Inter', sans-serif", size: 12 },
+          padding: 10,
+          cornerRadius: 8
+        }
+      }
+    }
+  });
+
+  // Stock Chart
+  {% if stock_items %}
+  const stockCtx = document.getElementById('stockChart');
+  new Chart(stockCtx, {
+    type: 'bar',
+    data: {
+      labels: [{% for item in stock_items %}"{{ item.item|escapejs }}",{% endfor %}],
+      datasets: [{
+        label: 'Available',
+        data: [{% for item in stock_items %}{{ item.available }},{% endfor %}],
+        backgroundColor: '#4f46e5',
+        hoverBackgroundColor: '#4338ca',
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { family: "'Outfit', sans-serif", size: 13, weight: '700' },
+          bodyFont: { family: "'Inter', sans-serif", size: 12 },
+          padding: 10,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#64748b' }
+        },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#64748b' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}

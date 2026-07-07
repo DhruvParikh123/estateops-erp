@@ -1,0 +1,835 @@
+{% extends "base.html" %}
+{% block title %}Admin Reports &middot; EstateOps{% endblock %}
+{% block page_title %}Admin Reports{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Premium CSS Variables / Tweaks */
+  .filter-card {
+    border-left: 4px solid var(--accent);
+  }
+  .form-control-estate {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    transition: all var(--transition-normal);
+  }
+  .form-control-estate:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    outline: none;
+  }
+  .kpi-card {
+    border-top: 4px solid var(--slate-200);
+  }
+  .kpi-card.leads { border-top-color: var(--status-active); }
+  .kpi-card.followups { border-top-color: var(--status-interested); }
+  .kpi-card.conversions { border-top-color: var(--status-converted); }
+  .kpi-card.updates { border-top-color: var(--slate-800); }
+  
+  .empty-chart-placeholder {
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--slate-400);
+    background: var(--slate-50);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--slate-200);
+  }
+  .empty-chart-placeholder .material-symbols-outlined {
+    font-size: 40px;
+    margin-bottom: 8px;
+  }
+  .source-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--slate-100);
+  }
+  .source-item:last-child {
+    border-bottom: none;
+  }
+  .source-bar-wrapper {
+    height: 6px;
+    background: var(--slate-100);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .source-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+  }
+
+  /* Details Tab Styles */
+  .reports-details-tabs {
+    border-bottom: 2px solid var(--slate-100);
+  }
+  .reports-details-tabs .nav-link {
+    border: none;
+    color: var(--slate-500);
+    font-weight: 600;
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    position: relative;
+    background: none;
+    transition: color 0.2s ease;
+  }
+  .reports-details-tabs .nav-link:hover {
+    color: var(--slate-900);
+  }
+  .reports-details-tabs .nav-link.active {
+    color: var(--accent);
+    background: none;
+  }
+  .reports-details-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* Print Styling Stylesheet Overrides */
+  @media print {
+    body {
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-size: 11pt !important;
+    }
+    .sidebar, .topbar, .tab-pills, .filter-card, .print-hide, .btn, .alert, .nav-tabs {
+      display: none !important;
+    }
+    .main-content {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      display: block !important;
+    }
+    .page-body {
+      padding: 0 !important;
+    }
+    .card-estate {
+      border: 1px solid #dee2e6 !important;
+      box-shadow: none !important;
+      margin-bottom: 20px !important;
+      page-break-inside: avoid;
+    }
+    .col-lg-6, .col-md-6 {
+      width: 50% !important;
+      flex: 0 0 50% !important;
+      max-width: 50% !important;
+    }
+    .col-lg-3, .col-sm-6 {
+      width: 25% !important;
+      flex: 0 0 25% !important;
+      max-width: 25% !important;
+    }
+    .row {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      margin-right: -15px !important;
+      margin-left: -15px !important;
+    }
+    .tab-content > .tab-pane {
+      display: block !important;
+      opacity: 1 !important;
+      page-break-before: always;
+    }
+    h5 {
+      margin-top: 15px !important;
+      border-bottom: 1px solid #ccc !important;
+      padding-bottom: 5px !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Subtitle & Date Indicator -->
+<div class="d-flex justify-content-between align-items-center mb-4 print-hide">
+  <p class="page-lede mb-0">Select a report filter below to review business performance analytics.</p>
+  <div class="badge bg-secondary px-3 py-2 fs-7 fw-semibold">
+    Active Range: {{ start_date|date:"M d, Y" }} &ndash; {{ end_date|date:"M d, Y" }}
+  </div>
+</div>
+
+<!-- Print-Only Report Header -->
+<div class="d-none d-print-block mb-4">
+  <div class="text-center pb-3 border-bottom">
+    <h2>EstateOps Performance Report</h2>
+    <p class="mb-1 text-muted">Generated on {% now "F j, Y, g:i a" %} &middot; Role: {{ user.role }}</p>
+    <div class="badge bg-dark px-3 py-1">
+      Reporting Period: {{ start_date|date:"F j, Y" }} &ndash; {{ end_date|date:"F j, Y" }} ({{ report_type|upper }})
+    </div>
+  </div>
+</div>
+
+<!-- Report Navigation Tabs -->
+<div class="tab-pills mb-4 print-hide">
+  <a href="?type=daily" class="{% if report_type == 'daily' %}active{% endif %}">Daily Report</a>
+  <a href="?type=weekly" class="{% if report_type == 'weekly' %}active{% endif %}">Weekly Report</a>
+  <a href="?type=monthly" class="{% if report_type == 'monthly' %}active{% endif %}">Monthly Report</a>
+  <a href="?type=custom" class="{% if report_type == 'custom' %}active{% endif %}">Custom Range</a>
+</div>
+
+<!-- Filter Selection & Actions Card -->
+<form method="get" class="card-estate p-4 mb-4 filter-card print-hide">
+  <input type="hidden" name="type" value="{{ report_type }}">
+  <div class="row align-items-end g-3">
+    {% if report_type == 'daily' %}
+    <div class="col-sm-6 col-md-4">
+      <label class="form-label fw-semibold text-secondary" style="font-size: 0.82rem;">Select Date</label>
+      <input type="date" name="date" class="form-control form-control-estate" value="{{ date_str }}">
+    </div>
+    {% elif report_type == 'weekly' %}
+    <div class="col-sm-6 col-md-4">
+      <label class="form-label fw-semibold text-secondary" style="font-size: 0.82rem;">Select Week</label>
+      <input type="week" name="week" class="form-control form-control-estate" value="{{ week_str }}">
+    </div>
+    {% elif report_type == 'monthly' %}
+    <div class="col-sm-6 col-md-4">
+      <label class="form-label fw-semibold text-secondary" style="font-size: 0.82rem;">Select Month</label>
+      <input type="month" name="month" class="form-control form-control-estate" value="{{ month_str }}">
+    </div>
+    {% elif report_type == 'custom' %}
+    <div class="col-sm-6 col-md-3">
+      <label class="form-label fw-semibold text-secondary" style="font-size: 0.82rem;">Start Date</label>
+      <input type="date" name="start_date" class="form-control form-control-estate" value="{{ start_date_str }}">
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <label class="form-label fw-semibold text-secondary" style="font-size: 0.82rem;">End Date</label>
+      <input type="date" name="end_date" class="form-control form-control-estate" value="{{ end_date_str }}">
+    </div>
+    {% endif %}
+    
+    <div class="col-6 col-md-2">
+      <button type="submit" class="btn btn-estate w-100 justify-content-center">
+        <span class="material-symbols-outlined" style="font-size: 18px;">filter_list</span> Filter
+      </button>
+    </div>
+    
+    <div class="col-6 col-md-6 text-end ms-auto d-flex gap-2 justify-content-end">
+      <button type="button" onclick="window.print()" class="btn btn-outline-estate w-auto">
+        <span class="material-symbols-outlined" style="font-size: 18px;">print</span> Print
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-outline-estate w-auto dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="material-symbols-outlined" style="font-size: 18px;">download</span> Export
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="exportDropdown">
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'dashboard:reports_export_leads' %}?type={{ report_type }}&date={{ date_str }}&week={{ week_str }}&month={{ month_str }}&start_date={{ start_date_str }}&end_date={{ end_date_str }}">
+              <span class="material-symbols-outlined text-secondary" style="font-size: 18px;">group</span> Leads CSV
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center gap-2" href="{% url 'dashboard:reports_export_followups' %}?type={{ report_type }}&date={{ date_str }}&week={{ week_str }}&month={{ month_str }}&start_date={{ start_date_str }}&end_date={{ end_date_str }}">
+              <span class="material-symbols-outlined text-secondary" style="font-size: 18px;">rate_review</span> Followups CSV
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- KPI Stats Dashboard Cards Row -->
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card kpi-card leads">
+      <div>
+        <div class="stat-label">New Leads</div>
+        <div class="stat-value">{{ total_new_leads }}</div>
+      </div>
+      <div class="stat-icon bg-opacity-10 bg-primary text-primary">
+        <span class="material-symbols-outlined">group</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card kpi-card followups">
+      <div>
+        <div class="stat-label">Follow-ups Logged</div>
+        <div class="stat-value">{{ total_followups }}</div>
+      </div>
+      <div class="stat-icon bg-opacity-10 bg-success text-success">
+        <span class="material-symbols-outlined">rate_review</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card kpi-card conversions">
+      <div>
+        <div class="stat-label">Deals Closed</div>
+        <div class="stat-value">{{ deals_converted }}</div>
+      </div>
+      <div class="stat-icon bg-opacity-10 bg-warning text-warning">
+        <span class="material-symbols-outlined">handshake</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-sm-6 col-lg-3">
+    <div class="stat-card kpi-card updates">
+      <div>
+        <div class="stat-label">Progress Updates</div>
+        <div class="stat-value">{{ updates_count }}</div>
+      </div>
+      <div class="stat-icon bg-opacity-10 bg-dark text-dark">
+        <span class="material-symbols-outlined">construction</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts & Highlights Block -->
+<div class="row g-4 mb-4">
+  <!-- Left Side: Activity Trend Chart (only if range is > 1 day) -->
+  {% if trend_labels|length > 1 %}
+  <div class="col-lg-6">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-primary">timeline</span>
+        Activity Trend
+      </h6>
+      <div style="position: relative; height: 260px;">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Requirements & Outcome Charts -->
+  <div class="{% if trend_labels|length > 1 %}col-lg-6{% else %}col-lg-12{% endif %}">
+    <div class="row g-4">
+      <div class="{% if trend_labels|length > 1 %}col-12 col-md-6{% else %}col-lg-6{% endif %}">
+        <div class="card-estate h-100">
+          <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+            <span class="material-symbols-outlined text-success">donut_large</span>
+            Lead Requirements
+          </h6>
+          <div style="position: relative; height: 220px;">
+            {% if req_data %}
+              <canvas id="reqChart"></canvas>
+            {% else %}
+              <div class="empty-chart-placeholder">
+                <span class="material-symbols-outlined text-muted">add_shopping_cart</span>
+                <span class="text-muted fw-semibold">No requirement statistics available</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="{% if trend_labels|length > 1 %}col-12 col-md-6{% else %}col-lg-6{% endif %}">
+        <div class="card-estate h-100">
+          <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+            <span class="material-symbols-outlined text-warning">pie_chart</span>
+            Follow-up Outcomes
+          </h6>
+          <div style="position: relative; height: 220px;">
+            {% if outcome_data %}
+              <canvas id="outcomeChart"></canvas>
+            {% else %}
+              <div class="empty-chart-placeholder">
+                <span class="material-symbols-outlined text-muted">assignment_late</span>
+                <span class="text-muted fw-semibold">No outcomes recorded in range</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Secondary Block: Sources Breakdown & Low Stock Warning -->
+<div class="row g-4 mb-4">
+  <!-- Top Lead Sources -->
+  <div class="col-lg-6">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2">
+        <span class="material-symbols-outlined text-info">share</span>
+        Top Lead Sources
+      </h6>
+      {% if top_sources %}
+        <div class="d-flex flex-column gap-3">
+          {% for item in top_sources %}
+            <div class="source-item">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold text-dark">{{ item.source }}</span>
+                <span class="fw-bold text-secondary" style="font-size: 0.85rem;">{{ item.count }} leads ({{ item.percentage }}%)</span>
+              </div>
+              <div class="source-bar-wrapper">
+                <div class="source-bar-fill" style="width: {{ item.percentage }}%;"></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-row py-4">
+          <span class="material-symbols-outlined" style="font-size: 32px;">hourglass_empty</span>
+          <p class="mb-0 mt-2">No lead source information available for this period.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Low Stock Alert Grid -->
+  <div class="col-lg-6">
+    <div class="card-estate h-100">
+      <h6 class="fw-bold mb-4 d-flex align-items-center gap-2 text-danger">
+        <span class="material-symbols-outlined">warning</span>
+        Low Stock Warnings (Currently)
+      </h6>
+      {% if low_stock_items %}
+        <div class="table-estate-wrapper">
+          <table class="table-estate">
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>In Stock</th>
+                <th>Threshold</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in low_stock_items %}
+                <tr>
+                  <td class="fw-bold">{{ item.item }}</td>
+                  <td>{{ item.available }}</td>
+                  <td class="text-muted">{{ item.threshold }}</td>
+                  <td>
+                    <span class="badge bg-danger text-white rounded-pill px-2 py-1 fs-8">Critical</span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-row py-4 d-flex flex-column align-items-center justify-content-center text-success">
+          <span class="material-symbols-outlined" style="font-size: 40px;">check_circle</span>
+          <p class="mb-0 mt-2 fw-semibold">All materials are well stocked.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Detailed Data Tabs Section -->
+<div class="card-estate mb-4 d-print-none">
+  <ul class="nav nav-tabs reports-details-tabs mb-4" id="reportDetailsTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="leads-tab" data-bs-toggle="tab" data-bs-target="#leads-pane" type="button" role="tab" aria-controls="leads-pane" aria-selected="true">
+        New Leads ({{ leads_list|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="followups-tab" data-bs-toggle="tab" data-bs-target="#followups-pane" type="button" role="tab" aria-controls="followups-pane" aria-selected="false">
+        Logged Follow-ups ({{ followups_list|length }})
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="updates-tab" data-bs-toggle="tab" data-bs-target="#updates-pane" type="button" role="tab" aria-controls="updates-pane" aria-selected="false">
+        Project Progress Updates ({{ updates_list|length }})
+      </button>
+    </li>
+  </ul>
+  
+  <div class="tab-content" id="reportDetailsTabContent">
+    <!-- Leads Pane -->
+    <div class="tab-pane fade show active" id="leads-pane" role="tabpanel" aria-labelledby="leads-tab" tabindex="0">
+      {% if leads_list %}
+        <div class="table-estate-wrapper">
+          <table class="table-estate">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Mobile</th>
+                <th>Requirement</th>
+                <th>Source</th>
+                <th>Budget (INR)</th>
+                <th>Status</th>
+                <th>Added Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lead in leads_list %}
+                <tr>
+                  <td class="fw-bold">{{ lead.client_name }}</td>
+                  <td>{{ lead.mobile }}</td>
+                  <td><span class="badge bg-secondary">{{ lead.requirement }}</span></td>
+                  <td>{{ lead.source|default:"&mdash;" }}</td>
+                  <td>{{ lead.budget_display }}</td>
+                  <td>
+                    {% if lead.status == 'active' %}
+                      <span class="badge-status-active">Active</span>
+                    {% elif lead.status == 'interested' %}
+                      <span class="badge-status-interested">Interested</span>
+                    {% elif lead.status == 'lost' %}
+                      <span class="badge-status-lost">Lost</span>
+                    {% elif lead.status == 'converted' %}
+                      <span class="badge-status-converted">Converted</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ lead.created_at|date:"M d, Y" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-row py-4">No leads created during this period.</div>
+      {% endif %}
+    </div>
+    
+    <!-- Follow-ups Pane -->
+    <div class="tab-pane fade" id="followups-pane" role="tabpanel" aria-labelledby="followups-tab" tabindex="0">
+      {% if followups_list %}
+        <div class="table-estate-wrapper">
+          <table class="table-estate">
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>Outcome</th>
+                <th>Next Follow-up</th>
+                <th>Logged Notes</th>
+                <th>Logged By</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for followup in followups_list %}
+                <tr>
+                  <td class="fw-bold">{{ followup.lead.client_name }}</td>
+                  <td>
+                    {% if followup.outcome == 'interested' %}
+                      <span class="badge-status-interested">Interested</span>
+                    {% elif followup.outcome == 'converted' %}
+                      <span class="badge-status-converted">Converted</span>
+                    {% elif followup.outcome == 'lost' %}
+                      <span class="badge-status-lost">Lost</span>
+                    {% elif followup.outcome == 'not_interested' %}
+                      <span class="badge bg-secondary text-white rounded-pill px-2 py-1 fs-8">Not Interested</span>
+                    {% elif followup.outcome == 'no_response' %}
+                      <span class="badge bg-dark text-white rounded-pill px-2 py-1 fs-8">No Response</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ followup.next_followup_date|date:"M d, Y"|default:"&mdash;" }}</td>
+                  <td><small>{{ followup.note }}</small></td>
+                  <td>{{ followup.created_by.username|default:"&mdash;" }}</td>
+                  <td>{{ followup.created_at|date:"M d, H:i" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-row py-4">No follow-ups logged during this period.</div>
+      {% endif %}
+    </div>
+    
+    <!-- Updates Pane -->
+    <div class="tab-pane fade" id="updates-pane" role="tabpanel" aria-labelledby="updates-tab" tabindex="0">
+      {% if updates_list %}
+        <div class="table-estate-wrapper">
+          <table class="table-estate">
+            <thead>
+              <tr>
+                <th>Project Name</th>
+                <th>Stage reached</th>
+                <th>Progress %</th>
+                <th>Update details</th>
+                <th>Logged By</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for update in updates_list %}
+                <tr>
+                  <td class="fw-bold">{{ update.project.name }}</td>
+                  <td><span class="badge-stage">{{ update.stage }}</span></td>
+                  <td><span class="fw-bold text-primary">{{ update.progress }}%</span></td>
+                  <td><small>{{ update.message }}</small></td>
+                  <td>{{ update.created_by.username|default:"&mdash;" }}</td>
+                  <td>{{ update.created_at|date:"M d, Y" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-row py-4">No progress updates logged during this period.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Print-Only Details Sections (Print renders all tables sequentially instead of tabs) -->
+<div class="d-none d-print-block">
+  <div class="card-estate mb-4">
+    <h5>New Leads Summary</h5>
+    {% if leads_list %}
+      <table class="table table-striped table-sm w-100" style="font-size: 10pt;">
+        <thead>
+          <tr>
+            <th>Client Name</th>
+            <th>Mobile</th>
+            <th>Req.</th>
+            <th>Source</th>
+            <th>Budget</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lead in leads_list %}
+            <tr>
+              <td>{{ lead.client_name }}</td>
+              <td>{{ lead.mobile }}</td>
+              <td>{{ lead.requirement }}</td>
+              <td>{{ lead.source|default:"" }}</td>
+              <td>{{ lead.budget_display }}</td>
+              <td>{{ lead.get_status_display }}</td>
+              <td>{{ lead.created_at|date:"Y-m-d" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-muted">No new leads added during this period.</p>
+    {% endif %}
+  </div>
+
+  <div class="card-estate mb-4">
+    <h5>Follow-ups Logged</h5>
+    {% if followups_list %}
+      <table class="table table-striped table-sm w-100" style="font-size: 10pt;">
+        <thead>
+          <tr>
+            <th>Client Name</th>
+            <th>Outcome</th>
+            <th>Next Follow-up</th>
+            <th>Notes</th>
+            <th>Logged By</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for followup in followups_list %}
+            <tr>
+              <td>{{ followup.lead.client_name }}</td>
+              <td>{{ followup.get_outcome_display }}</td>
+              <td>{{ followup.next_followup_date|date:"Y-m-d"|default:"-" }}</td>
+              <td>{{ followup.note }}</td>
+              <td>{{ followup.created_by.username }}</td>
+              <td>{{ followup.created_at|date:"Y-m-d" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-muted">No follow-ups logged during this period.</p>
+    {% endif %}
+  </div>
+
+  <div class="card-estate mb-4">
+    <h5>Project Progress Updates</h5>
+    {% if updates_list %}
+      <table class="table table-striped table-sm w-100" style="font-size: 10pt;">
+        <thead>
+          <tr>
+            <th>Project Name</th>
+            <th>Stage</th>
+            <th>Progress %</th>
+            <th>Notes</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for update in updates_list %}
+            <tr>
+              <td>{{ update.project.name }}</td>
+              <td>{{ update.stage }}</td>
+              <td>{{ update.progress }}%</td>
+              <td>{{ update.message }}</td>
+              <td>{{ update.created_at|date:"Y-m-d" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="text-muted">No progress updates logged during this period.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Typography styling configuration
+  const chartFont = {
+    family: "'Outfit', 'Inter', sans-serif",
+    size: 11,
+    weight: '600'
+  };
+
+  // 1. Requirements Doughnut Chart
+  {% if req_data %}
+  const reqCtx = document.getElementById('reqChart').getContext('2d');
+  new Chart(reqCtx, {
+    type: 'doughnut',
+    data: {
+      labels: {{ req_labels|safe }},
+      datasets: [{
+        data: {{ req_data|safe }},
+        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6'],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            font: chartFont,
+            usePointStyle: true,
+            boxWidth: 8,
+            padding: 10,
+            color: '#475569'
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { family: "'Outfit', sans-serif", size: 12, weight: '700' },
+          bodyFont: { family: "'Inter', sans-serif", size: 11 },
+          padding: 8,
+          cornerRadius: 6
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // 2. Outcomes Doughnut Chart
+  {% if outcome_data %}
+  const outcomeCtx = document.getElementById('outcomeChart').getContext('2d');
+  new Chart(outcomeCtx, {
+    type: 'doughnut',
+    data: {
+      labels: {{ outcome_labels|safe }},
+      datasets: [{
+        data: {{ outcome_data|safe }},
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#475569'],
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            font: chartFont,
+            usePointStyle: true,
+            boxWidth: 8,
+            padding: 10,
+            color: '#475569'
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { family: "'Outfit', sans-serif", size: 12, weight: '700' },
+          bodyFont: { family: "'Inter', sans-serif", size: 11 },
+          padding: 8,
+          cornerRadius: 6
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // 3. Activity Trend Line Chart
+  {% if trend_labels|length > 1 %}
+  const trendCtx = document.getElementById('trendChart').getContext('2d');
+  new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: {{ trend_labels|safe }},
+      datasets: [
+        {
+          label: 'New Leads',
+          data: {{ trend_leads|safe }},
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.05)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointHoverRadius: 5
+        },
+        {
+          label: 'Follow-ups',
+          data: {{ trend_followups|safe }},
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointHoverRadius: 5
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: chartFont,
+            usePointStyle: true,
+            boxWidth: 8,
+            color: '#475569'
+          }
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { family: "'Outfit', sans-serif", size: 12, weight: '700' },
+          bodyFont: { family: "'Inter', sans-serif", size: 11 },
+          padding: 10,
+          cornerRadius: 6
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'Inter', sans-serif", size: 10 }, color: '#64748b' }
+        },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { family: "'Inter', sans-serif", size: 10 }, color: '#64748b' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,36 @@
+# Django / Python
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Virtual Environments
+myvenv/
+venv/
+.venv/
+env/
+ENV/
+bin/
+lib/
+include/
+
+# IDE and Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Local configuration files
+.env
+db.sqlite3
+
+# Media and Uploads
+media/
+estateops/media/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini

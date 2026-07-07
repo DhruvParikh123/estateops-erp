@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Project Progress &middot; EstateOps{% endblock %}
+{% block page_title %}Project Progress{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <p class="page-lede mb-0">Track construction milestones, update stages, and broadcast progress to buyers.</p>
+  <button class="btn btn-estate" data-bs-toggle="modal" data-bs-target="#newProjectModal">
+    <span class="material-symbols-outlined">add</span> New Project
+  </button>
+</div>
+
+<!-- Projects Grid -->
+<div class="row g-4">
+  {% for project in projects %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card-estate h-100 d-flex flex-column justify-content-between">
+        <div>
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h5 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.2px;">{{ project.name }}</h5>
+          </div>
+          <div class="text-muted small mb-3 d-flex align-items-center gap-1">
+            <span class="material-symbols-outlined" style="font-size: 15px; color: var(--slate-400);">location_on</span>
+            {{ project.location|default:"No Location Spec" }}
+          </div>
+          
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge-stage">{{ project.current_stage }}</span>
+            <span class="fw-bold text-primary" style="font-size: 0.95rem;">{{ project.progress }}%</span>
+          </div>
+          
+          <div class="progress-track mb-4">
+            <div class="progress-fill" style="width: {{ project.progress }}%;"></div>
+          </div>
+        </div>
+        
+        <div>
+          <button class="btn btn-outline-estate w-100 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#updateModal{{ project.id }}">
+            <span class="material-symbols-outlined" style="font-size: 18px;">campaign</span>
+            Post Progress Update
+          </button>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="col-12">
+      <div class="card-estate empty-row d-flex flex-column align-items-center justify-content-center py-5">
+        <span class="material-symbols-outlined mb-2" style="font-size: 44px; color: var(--slate-300);">construction</span>
+        No projects yet. Create one to get started.
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- New Project Modal -->
+<div class="modal fade" id="newProjectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">add_business</span>
+          New Construction Project
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'projects:create' %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label class="form-label">Project Name</label>
+              {{ project_form.name }}
+            </div>
+            <div class="col-md-12">
+              <label class="form-label">Location</label>
+              {{ project_form.location }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Current Stage</label>
+              {{ project_form.current_stage }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Progress %</label>
+              {{ project_form.progress }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-estate">
+            <span class="material-symbols-outlined" style="font-size: 18px;">save</span> Create Project
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Update Modals -->
+{% for project in projects %}
+<div class="modal fade" id="updateModal{{ project.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">campaign</span>
+          Post Progress Update
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'projects:update' project.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="stage{{ project.id }}">Construction Stage</label>
+              <select class="form-select" name="stage" id="stage{{ project.id }}">
+                {% for value, label in project_form.fields.current_stage.choices %}
+                  <option value="{{ value }}" {% if value == project.current_stage %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="progress{{ project.id }}">Overall Progress %</label>
+              <input type="number" min="0" max="100" class="form-control" name="progress" id="progress{{ project.id }}" value="{{ project.progress }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="message{{ project.id }}">Message to Buyers</label>
+              <textarea class="form-control" name="message" id="message{{ project.id }}" rows="3" placeholder="Explain the current work progress (e.g. excavation completed, brickwork started)..."></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="photo{{ project.id }}">Progress Photo (Optional)</label>
+              <input type="file" class="form-control" name="photo" id="photo{{ project.id }}" accept="image/*">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-estate">
+            <span class="material-symbols-outlined" style="font-size: 18px;">send</span> Update &amp; Notify
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

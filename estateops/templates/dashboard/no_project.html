@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Access Restricted &middot; EstateOps{% endblock %}
+{% block page_title %}Workspace Access Pending{% endblock %}
+
+{% block content %}
+<div class="card-estate text-center py-5">
+  <div class="py-4">
+    <span class="material-symbols-outlined text-warning mb-3" style="font-size: 64px;">lock</span>
+    <h3 class="fw-bold text-dark">No Project Assigned</h3>
+    <p class="text-secondary mx-auto" style="max-width: 480px; font-size: 0.95rem; line-height: 1.6;">
+      Your user account is currently active, but you have not been assigned to a specific project site workspace yet.
+    </p>
+    <p class="text-muted small">Please contact your Super Admin to assign your account to a project site.</p>
+    <a href="{% url 'accounts:logout' %}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="btn btn-estate mt-3">
+      Sign Out
+    </a>
+    <form id="logout-form" action="{% url 'accounts:logout' %}" method="post" style="display: none;">
+      {% csrf_token %}
+    </form>
+  </div>
+</div>
+{% endblock %}

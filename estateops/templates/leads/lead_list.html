@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}Leads &amp; Follow-Ups &middot; {{ project.name }} &middot; EstateOps{% endblock %}
+{% block page_title %}Leads &amp; Follow-Ups{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <p class="page-lede mb-0">Capture client leads, schedule future follow-ups, and monitor conversions.</p>
+  <button class="btn btn-estate" data-bs-toggle="modal" data-bs-target="#newLeadModal">
+    <span class="material-symbols-outlined">add</span> New Lead
+  </button>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="tab-pills mb-4">
+  <a href="?tab=active" class="{% if tab == 'active' %}active{% endif %}">Active Follow-ups</a>
+  <a href="?tab=interested" class="{% if tab == 'interested' %}active{% endif %}">Interested</a>
+  <a href="?tab=lost" class="{% if tab == 'lost' %}active{% endif %}">Lost</a>
+  <a href="?tab=all" class="{% if tab == 'all' %}active{% endif %}">All</a>
+</div>
+
+<!-- Table Card -->
+<div class="card-estate p-0 overflow-hidden">
+  <div class="table-estate-wrapper">
+    <table class="table-estate">
+      <thead>
+        <tr>
+          <th>Client</th>
+          <th>Mobile</th>
+          <th>Requirement</th>
+          <th>Budget</th>
+          <th>Follow-ups</th>
+          <th>Status</th>
+          <th>Next F/U Date</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in leads %}
+        <tr>
+          <td class="fw-semibold text-dark">{{ lead.client_name }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              <span class="material-symbols-outlined text-muted" style="font-size: 16px;">call</span>
+              {{ lead.mobile }}
+            </div>
+          </td>
+          <td>
+            <span class="badge-stage">{{ lead.get_requirement_display|default:lead.requirement }}</span>
+          </td>
+          <td>
+            <span class="fw-medium text-dark">{{ lead.budget_display }}</span>
+          </td>
+          <td>
+            <button class="btn-follow d-inline-flex align-items-center gap-1" data-bs-toggle="modal"
+              data-bs-target="#logsModal{{ lead.id }}"
+              style="padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; background-color: var(--slate-50); border: 1px solid var(--slate-200);">
+              <span class="material-symbols-outlined" style="font-size: 15px; color: var(--slate-500);">history</span>
+              <span class="fw-bold">{{ lead.followups.count }} / {{ lead.planned_followups }}</span>
+            </button>
+          </td>
+          <td>
+            <span class="badge-status-{{ lead.status }}">
+              {% if lead.status == 'active' %}
+              <span class="material-symbols-outlined" style="font-size: 12px;">notifications_active</span>
+              {% elif lead.status == 'interested' %}
+              <span class="material-symbols-outlined" style="font-size: 12px;">check_circle</span>
+              {% elif lead.status == 'lost' %}
+              <span class="material-symbols-outlined" style="font-size: 12px;">cancel</span>
+              {% elif lead.status == 'converted' %}
+              <span class="material-symbols-outlined" style="font-size: 12px;">workspace_premium</span>
+              {% endif %}
+              {{ lead.status }}
+            </span>
+          </td>
+          <td>
+            {% if lead.next_followup_date %}
+            <span class="fw-medium text-dark">{{ lead.next_followup_date|date:"M d, Y" }}</span>
+            {% else %}
+            <span class="text-muted">&mdash;</span>
+            {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if lead.is_not_interested %}
+            <button class="btn-follow text-danger" data-bs-toggle="modal"
+              data-bs-target="#notInterestedModal{{ lead.id }}"
+              style="background: rgba(225, 29, 72, 0.05); border-color: rgba(225, 29, 72, 0.1);">
+              <span class="material-symbols-outlined" style="font-size: 15px;">person_off</span> Not Interested
+            </button>
+            {% elif not lead.can_followup %}
+            <button class="btn-follow opacity-50" disabled style="cursor: not-allowed;"
+              title="Maximum follow-up limit reached or status closed.">
+              <span class="material-symbols-outlined" style="font-size: 15px;">block</span> Max F/U Reached
+            </button>
+            {% else %}
+            <button class="btn-follow" data-bs-toggle="modal" data-bs-target="#followupModal{{ lead.id }}">
+              <span class="material-symbols-outlined" style="font-size: 15px;">phone_callback</span> Follow-up
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="empty-row">
+            <div class="d-flex flex-column align-items-center py-4">
+              <span class="material-symbols-outlined mb-2"
+                style="font-size: 40px; color: var(--slate-300);">contact_support</span>
+              No leads in this view yet.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- New Lead Modal -->
+<div class="modal fade" id="newLeadModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">person_add</span>
+          New Client Lead
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'leads:create' project.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Client Name</label>
+              {{ lead_form.client_name }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Mobile Number</label>
+              {{ lead_form.mobile }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Requirement</label>
+              {{ lead_form.requirement }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Source / Reference</label>
+              {{ lead_form.source }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Budget Min (&#8377;)</label>
+              {{ lead_form.budget_min }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Budget Max (&#8377;)</label>
+              {{ lead_form.budget_max }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Planned Follow-ups</label>
+              {{ lead_form.planned_followups }}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Next Follow-up Date</label>
+              {{ lead_form.next_followup_date }}
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              {{ lead_form.notes }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-estate">
+            <span class="material-symbols-outlined" style="font-size: 18px;">save</span> Save Lead
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Follow-up Modals -->
+{% for lead in leads %}
+<div class="modal fade" id="followupModal{{ lead.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">phone_callback</span>
+          Follow-up &middot; {{ lead.client_name }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{% url 'leads:followup' project.id lead.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" for="outcome{{ lead.id }}">Outcome / Status Update</label>
+            <select class="form-select" name="outcome" id="outcome{{ lead.id }}">
+              <option value="interested" {% if lead.status == 'interested' %}selected{% endif %}>Interested &mdash; Keep
+                in queue</option>
+              <option value="not_interested" {% if lead.status == 'not_interested' %}selected{% endif %}>Not Interested
+              </option>
+              <option value="lost" {% if lead.status == 'lost' %}selected{% endif %}>Lost</option>
+              <option value="converted" {% if lead.status == 'converted' %}selected{% endif %}>Converted &mdash; Close
+                deal</option>
+              <option value="no_response">No Response</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="next_followup_date{{ lead.id }}">Next Follow-up Date</label>
+            <input type="date" class="form-control" name="next_followup_date" id="next_followup_date{{ lead.id }}"
+              value="{{ lead.next_followup_date|date:'Y-m-d' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="note{{ lead.id }}">Notes / Action Details</label>
+            <textarea class="form-control" name="note" id="note{{ lead.id }}" rows="3"
+              placeholder="Called client, discussed options..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-estate">
+            <span class="material-symbols-outlined" style="font-size: 18px;">save</span> Save Updates
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Follow-up Log History Modals -->
+{% for lead in leads %}
+<div class="modal fade" id="logsModal{{ lead.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <span class="material-symbols-outlined text-primary">history</span>
+          Follow-up History &middot; {{ lead.client_name }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+        <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-3 rounded-3"
+          style="border: 1px solid var(--slate-200);">
+          <div>
+            <div class="text-muted small"
+              style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Total
+              Follow-ups</div>
+            <div class="fs-5 fw-bold text-dark">{{ lead.followups.count }} taken</div>
+          </div>
+          <div>
+            <div class="text-muted small text-end"
+              style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Current
+              Status</div>
+            <div class="text-end mt-1">
+              <span class="badge-status-{{ lead.status }}">{{ lead.status }}</span>
+            </div>
+          </div>
+        </div>
+
+        {% if lead.followups.all %}
+        <div class="logs-timeline">
+          {% for log in lead.followups.all %}
+          <div class="log-item p-3 mb-3 rounded-3"
+            style="background: var(--slate-50); border: 1px solid var(--slate-200); border-left: 4px solid {% if log.outcome == 'lost' or log.outcome == 'not_interested' %}var(--status-lost){% elif log.outcome == 'converted' %}var(--status-converted){% elif log.outcome == 'interested' %}var(--status-interested){% else %}var(--status-active){% endif %};">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge-status-{{ log.outcome }}" style="font-size: 0.7rem; padding: 2px 8px;">{{ log.get_outcome_display }}</span>
+              <span class="text-muted small" style="font-size: 0.75rem; font-weight: 500;">
+                {{ log.created_at|date:"M d, Y" }} &middot; {{ log.created_at|date:"h:i A" }}
+              </span>
+            </div>
+            {% if log.note %}
+            <p class="mb-2 text-dark small" style="line-height: 1.4;">{{ log.note }}</p>
+            {% else %}
+            <p class="mb-2 text-muted small fst-italic">No action notes provided.</p>
+            {% endif %}
+            <div class="text-muted small d-flex align-items-center gap-1" style="font-size: 0.7rem; font-weight: 600;">
+              <span class="material-symbols-outlined" style="font-size: 12px;">person</span>
+              Recorded by: {{ log.created_by.username|default:"System" }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-row text-center py-4">
+          <span class="material-symbols-outlined text-muted mb-2" style="font-size: 36px;">history</span>
+          <p class="text-muted mb-0">No follow-ups recorded yet.</p>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Not Interested Details Modals -->
+{% for lead in leads %}
+{% if lead.is_not_interested %}
+<div class="modal fade" id="notInterestedModal{{ lead.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header text-white" style="background-color: var(--status-lost) !important;">
+        <h5 class="modal-title d-flex align-items-center gap-2 text-white">
+          <span class="material-symbols-outlined text-white">person_off</span>
+          Not Interested Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <span class="material-symbols-outlined text-danger mb-2"
+            style="font-size: 48px; color: var(--status-lost);">cancel</span>
+          <h6 class="fw-bold text-dark fs-5">{{ lead.client_name }}</h6>
+          <p class="text-muted small">This client has declined interest, and follow-ups are closed.</p>
+        </div>
+
+        {% for log in lead.followups.all %}
+        {% if log.outcome == 'not_interested' %}
+        <div class="p-3 rounded-3" style="background: var(--slate-50); border: 1px solid var(--slate-200);">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-danger" style="background-color: var(--status-lost) !important;">Not Interested</span>
+            <span class="text-muted small" style="font-size: 0.75rem;">{{ log.created_at|date:"M d, Y" }} &middot; {{
+              log.created_at|date:"h:i A" }}</span>
+          </div>
+          <div class="text-dark small mb-3">
+            <strong>Feedback Note:</strong>
+            <p class="mt-1 p-2 rounded bg-white text-secondary"
+              style="border-left: 3px solid var(--status-lost); line-height: 1.4;">
+              {{ log.note|default:"No details recorded." }}
+            </p>
+          </div>
+          <div class="text-muted small d-flex align-items-center gap-1" style="font-size: 0.75rem; font-weight: 600;">
+            <span class="material-symbols-outlined" style="font-size: 13px;">person</span>
+            Recorded by: {{ log.created_by.username|default:"System" }}
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}
