@@ -40,29 +40,27 @@ class Command(BaseCommand):
         proj_amd = Project.objects.create(
             name="Estate Ops Ahmedabad",
             code="AMD-01",
-            client_name="Girish Infrastructure Ltd",
             location_type="AHMEDABAD",
             address="Near SG Highway, Bodakdev",
             city="Ahmedabad",
             state="Gujarat",
             pincode="380054",
-            status="ACTIVE",
+            status="UNDER_CONSTRUCTION",
             current_stage=Project.Stage.PLASTER,
             progress=70,
             created_by=admin_user
         )
         self.stdout.write(self.style.SUCCESS("Created Project -> Estate Ops Ahmedabad (AMD-01)"))
-
+ 
         proj_rjt = Project.objects.create(
             name="Estate Ops Rajkot",
             code="RJT-01",
-            client_name="Saurashtra Realties",
             location_type="OTHER",
             address="Kalavad Road, Opp. University Site",
             city="Rajkot",
             state="Gujarat",
             pincode="360005",
-            status="ACTIVE",
+            status="UNDER_CONSTRUCTION",
             current_stage=Project.Stage.SLAB,
             progress=45,
             created_by=admin_user

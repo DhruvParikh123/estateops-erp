@@ -76,15 +76,6 @@ def project_delete(request, project_id):
     return redirect("dashboard:home")
 
 
-@login_required
-def project_toggle_status(request, project_id):
-    check_role_or_deny(request.user, [User.Role.SUPER_ADMIN])
-    project = get_object_or_404(Project, id=project_id)
-    project.status = "INACTIVE" if project.status == "ACTIVE" else "ACTIVE"
-    project.save()
-    messages.success(request, f"Project '{project.name}' status toggled to {project.status}.")
-    return redirect("dashboard:home")
-
 
 # Project Workspace View (Dashboard)
 @login_required

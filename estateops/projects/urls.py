@@ -8,7 +8,6 @@ urlpatterns = [
     path("create/", views.project_create, name="create"),
     path("<int:project_id>/edit/", views.project_edit, name="edit"),
     path("<int:project_id>/delete/", views.project_delete, name="delete"),
-    path("<int:project_id>/toggle/", views.project_toggle_status, name="toggle_status"),
 
     # Project Workspace (Project level - Scoped to project_id)
     path("<int:project_id>/dashboard/", views.project_dashboard, name="dashboard"),

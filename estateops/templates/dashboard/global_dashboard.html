@@ -76,10 +76,14 @@
             <span class="badge bg-secondary mb-1" style="font-size: 0.75rem;">{{ project.code }}</span>
             <h5 class="fw-bold text-dark mb-0">{{ project.name }}</h5>
           </div>
-          {% if project.status == 'ACTIVE' %}
-          <span class="badge-status-interested">Active</span>
+          {% if project.status == 'UNDER_CONSTRUCTION' %}
+          <span class="badge-status-interested">Under Construction</span>
+          {% elif project.status == 'READY_TO_MOVE' %}
+          <span class="badge-status-converted">Ready to Move</span>
+          {% elif project.status == 'COMPLETED' %}
+          <span class="badge-status-active">Completed</span>
           {% else %}
-          <span class="badge-status-lost">Inactive</span>
+          <span class="badge-status-lost">Other</span>
           {% endif %}
         </div>
 
@@ -104,18 +108,11 @@
           </a>
 
           <div class="d-flex gap-2">
-            <!-- Toggle Status -->
-            <a href="{% url 'projects:toggle_status' project.id %}"
-              class="btn btn-outline-estate btn-sm flex-fill d-flex align-items-center justify-content-center gap-1"
-              style="font-size: 0.8rem;">
-              <span class="material-symbols-outlined" style="font-size: 16px;">sync</span>
-              {% if project.status == 'ACTIVE' %}Deactivate{% else %}Activate{% endif %}
-            </a>
             <!-- Edit -->
-            <button class="btn btn-outline-estate btn-sm d-flex align-items-center justify-content-center"
+            <button class="btn btn-outline-estate btn-sm flex-fill d-flex align-items-center justify-content-center gap-1"
               data-bs-toggle="modal" data-bs-target="#editProjectModal{{ project.id }}"
-              style="width: 36px; padding: 0;">
-              <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+              style="font-size: 0.8rem;">
+              <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Settings
             </button>
             <!-- Delete -->
             <a href="{% url 'projects:delete' project.id %}"
@@ -174,8 +171,10 @@
               <div class="col-md-6">
                 <label class="form-label fw-bold">Status</label>
                 <select name="status" class="form-select">
-                  <option value="ACTIVE" {% if project.status == 'ACTIVE' %}selected{% endif %}>Active</option>
-                  <option value="INACTIVE" {% if project.status == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                  <option value="UNDER_CONSTRUCTION" {% if project.status == 'UNDER_CONSTRUCTION' %}selected{% endif %}>Under Construction</option>
+                  <option value="READY_TO_MOVE" {% if project.status == 'READY_TO_MOVE' %}selected{% endif %}>Ready to Move</option>
+                  <option value="COMPLETED" {% if project.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                  <option value="OTHER" {% if project.status == 'OTHER' %}selected{% endif %}>Other</option>
                 </select>
               </div>
             </div>
@@ -247,8 +246,10 @@
             <div class="col-md-6">
               <label class="form-label fw-bold">Status</label>
               <select name="status" class="form-select">
-                <option value="ACTIVE" selected>Active</option>
-                <option value="INACTIVE">Inactive</option>
+                <option value="UNDER_CONSTRUCTION" selected>Under Construction</option>
+                <option value="READY_TO_MOVE">Ready to Move</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="OTHER">Other</option>
               </select>
             </div>
           </div>

@@ -13,6 +13,12 @@ class Project(models.Model):
         FINISHING = "Finishing", "Finishing"
         HANDOVER = "Handover", "Handover"
 
+    class Status(models.TextChoices):
+        UNDER_CONSTRUCTION = "UNDER_CONSTRUCTION", "Under Construction"
+        READY_TO_MOVE = "READY_TO_MOVE", "Ready to Move"
+        COMPLETED = "COMPLETED", "Completed"
+        OTHER = "OTHER", "Other"
+
     name = models.CharField(max_length=150)
     code = models.CharField(max_length=50, unique=True, null=True, blank=True)
     location_type = models.CharField(max_length=100, default="Ahmedabad", blank=True, null=True)
@@ -23,9 +29,9 @@ class Project(models.Model):
     state = models.CharField(max_length=100, blank=True, null=True)
     pincode = models.CharField(max_length=20, blank=True, null=True)
     status = models.CharField(
-        max_length=10,
-        choices=[("ACTIVE", "Active"), ("INACTIVE", "Inactive")],
-        default="ACTIVE"
+        max_length=20,
+        choices=Status.choices,
+        default=Status.UNDER_CONSTRUCTION
     )
     current_stage = models.CharField(max_length=20, choices=Stage.choices, default=Stage.PLINTH)
     progress = models.PositiveIntegerField(default=0)
